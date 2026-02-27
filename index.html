@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STEM+ Quiz Championship</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080c14;--panel:#0d1525;--border:#1a2d4a;--accent:#00d4ff;--accent2:#ff6b35;--correct:#00ff88;--wrong:#ff2d55;--text:#e8f4ff;--muted:#4a6080;--glow:0 0 20px rgba(0,212,255,0.4);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;overflow-x:hidden;position:relative;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;animation:gridMove 20s linear infinite;}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 20% 50%,rgba(0,212,255,0.05) 0%,transparent 60%),radial-gradient(ellipse at 80% 50%,rgba(255,107,53,0.05) 0%,transparent 60%);}
+@keyframes gridMove{0%{transform:translateY(0)}100%{transform:translateY(40px)}}
+#app{position:relative;z-index:10;width:100%;max-width:800px;padding:16px;}
+.screen{display:none;}.screen.active{display:block;}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:36px;position:relative;overflow:hidden;animation:scanIn .4s ease-out;}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scanLine 3s ease-in-out infinite;}
+@keyframes scanIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scanLine{0%,100%{opacity:.4}50%{opacity:1}}
+
+/* ENTRY */
+.entry-logo{text-align:center;margin-bottom:28px;}
+.entry-logo .title{font-family:'Orbitron',monospace;font-size:2.2rem;font-weight:900;letter-spacing:4px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;display:block;margin-bottom:6px;}
+.entry-logo .subtitle{font-size:.95rem;color:var(--muted);letter-spacing:5px;text-transform:uppercase;}
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:28px;}
+.stat-chip{background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:4px;padding:10px;text-align:center;}
+.stat-chip .val{font-family:'Orbitron',monospace;font-size:1.2rem;color:var(--accent);display:block;}
+.stat-chip .lbl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;}
+.input-group{margin-bottom:18px;}
+.input-group label{display:block;font-size:.75rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:7px;}
+.input-group input{width:100%;background:rgba(0,212,255,0.05);border:1px solid var(--border);border-radius:4px;padding:12px 15px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:1.1rem;font-weight:600;outline:none;transition:border-color .3s,box-shadow .3s;}
+.input-group input:focus{border-color:var(--accent);box-shadow:var(--glow);}
+.btn{display:block;width:100%;padding:13px;font-family:'Orbitron',monospace;font-size:.85rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;border:none;border-radius:4px;cursor:pointer;transition:all .3s;}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#0090cc);color:#000;box-shadow:0 4px 20px rgba(0,212,255,.3);}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,212,255,.5);}
+.btn-secondary{background:transparent;border:1px solid var(--accent);color:var(--accent);}
+.btn-secondary:hover{background:rgba(0,212,255,.1);}
+
+/* SECTION INTRO */
+.section-intro{text-align:center;padding:10px 0;}
+.section-number{font-family:'Orbitron',monospace;font-size:.7rem;letter-spacing:4px;color:var(--muted);margin-bottom:10px;}
+.section-name-big{font-family:'Orbitron',monospace;font-size:2.4rem;font-weight:900;letter-spacing:3px;margin-bottom:8px;}
+.section-desc{font-size:1rem;color:var(--muted);margin-bottom:26px;line-height:1.6;}
+.section-info-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:26px;}
+.sinfo{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:4px;padding:14px;text-align:center;}
+.sinfo .v{font-family:'Orbitron',monospace;font-size:1.4rem;color:var(--accent);display:block;}
+.sinfo .l{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;}
+.section-progress-dots{display:flex;justify-content:center;gap:8px;margin-bottom:24px;}
+.dot{width:38px;height:6px;border-radius:3px;background:var(--border);transition:background .4s,box-shadow .4s;}
+.dot.done{background:var(--accent2);}
+.dot.active{background:var(--accent);box-shadow:0 0 10px var(--accent);}
+
+/* QUIZ */
+.quiz-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+.q-meta{display:flex;flex-direction:column;gap:4px;}
+.q-counter{font-family:'Orbitron',monospace;font-size:.78rem;color:var(--muted);letter-spacing:2px;}
+.category-tag{font-size:.62rem;letter-spacing:3px;text-transform:uppercase;padding:3px 8px;border-radius:2px;display:inline-block;}
+.score-block{text-align:right;}
+.score-label{font-size:.6rem;color:var(--muted);letter-spacing:2px;margin-bottom:2px;}
+.score-display{font-family:'Orbitron',monospace;font-size:1.15rem;font-weight:700;color:var(--accent);}
+.score-display.negative{color:var(--wrong);}
+.section-score-mini{font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;}
+.progress-section-wrap{margin-bottom:18px;}
+.pbar-label{font-size:.6rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:3px;display:flex;justify-content:space-between;}
+.progress-bar{width:100%;height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:7px;}
+.progress-fill{height:100%;border-radius:2px;transition:width .5s ease;}
+.pf-overall{background:linear-gradient(90deg,var(--accent2),#cc4400);box-shadow:0 0 6px rgba(255,107,53,.4);}
+.timer-wrap{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.timer-ring{position:relative;width:58px;height:58px;flex-shrink:0;}
+.timer-ring svg{transform:rotate(-90deg);}
+.timer-ring .track{fill:none;stroke:var(--border);stroke-width:4;}
+.timer-ring .fill{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-dasharray:163;stroke-dashoffset:0;transition:stroke-dashoffset 1s linear,stroke .3s;}
+.timer-ring .fill.warning{stroke:var(--accent2);}
+.timer-ring .fill.danger{stroke:var(--wrong);}
+.timer-number{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:1rem;font-weight:700;}
+.timer-bar-wrap{flex:1;}
+.timer-label{font-size:.65rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+.timer-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+.timer-bar-fill{height:100%;border-radius:3px;transition:width 1s linear,background .3s;}
+.question-text{font-size:1.2rem;font-weight:600;line-height:1.55;margin-bottom:22px;}
+.options{display:flex;flex-direction:column;gap:9px;}
+.option{padding:13px 17px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:1.02rem;font-weight:600;color:var(--text);text-align:left;transition:all .2s;display:flex;align-items:center;gap:11px;}
+.option:hover:not(.disabled){background:rgba(0,212,255,0.08);border-color:var(--accent);transform:translateX(4px);}
+.option.disabled{cursor:default;}
+.option.correct{background:rgba(0,255,136,0.12);border-color:var(--correct);color:var(--correct);box-shadow:0 0 14px rgba(0,255,136,.2);animation:pulseC .5s ease;}
+.option.wrong{background:rgba(255,45,85,0.12);border-color:var(--wrong);color:var(--wrong);animation:shake .4s ease;}
+@keyframes pulseC{0%{transform:scale(1)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.opt-letter{width:27px;height:27px;border:1px solid var(--muted);border-radius:3px;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:.68rem;font-weight:700;flex-shrink:0;transition:all .2s;}
+.option.correct .opt-letter{border-color:var(--correct);background:rgba(0,255,136,.2);}
+.option.wrong .opt-letter{border-color:var(--wrong);background:rgba(255,45,85,.2);}
+.feedback-strip{margin-top:12px;padding:10px 15px;border-radius:4px;font-size:.92rem;font-weight:600;letter-spacing:1px;display:none;animation:slideUp .3s ease;}
+@keyframes slideUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.feedback-strip.correct{display:block;background:rgba(0,255,136,.1);border:1px solid var(--correct);color:var(--correct);}
+.feedback-strip.wrong{display:block;background:rgba(255,45,85,.1);border:1px solid var(--wrong);color:var(--wrong);}
+.feedback-strip.timeout{display:block;background:rgba(255,107,53,.1);border:1px solid var(--accent2);color:var(--accent2);}
+
+/* SECTION END */
+.section-end-header{text-align:center;margin-bottom:22px;}
+.sec-score-big{font-family:'Orbitron',monospace;font-size:3.8rem;font-weight:900;line-height:1;display:block;animation:countUp .6s ease-out;}
+@keyframes countUp{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+.sec-score-label{font-size:.75rem;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-top:4px;}
+.mini-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.mstat{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:4px;padding:13px;text-align:center;}
+.mstat .n{font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:700;display:block;}
+.mstat .l{font-size:.65rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+.n.green{color:var(--correct)}.n.red{color:var(--wrong)}.n.orange{color:var(--accent2)}
+
+/* FINAL */
+.final-score-display{text-align:center;margin-bottom:24px;}
+.final-score-num{font-family:'Orbitron',monospace;font-size:4.5rem;font-weight:900;line-height:1;display:block;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:countUp .8s ease-out;margin-bottom:8px;}
+.grade-badge{display:inline-block;padding:7px 20px;border-radius:30px;font-family:'Orbitron',monospace;font-size:.95rem;font-weight:700;letter-spacing:3px;}
+.grade-S{background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;}
+.grade-A{background:linear-gradient(135deg,#00ff88,#009944);color:#000;}
+.grade-B{background:linear-gradient(135deg,#00d4ff,#0070aa);color:#000;}
+.grade-C{background:linear-gradient(135deg,#a0a0ff,#5050cc);color:#fff;}
+.grade-D{background:linear-gradient(135deg,#ff6b35,#cc3300);color:#fff;}
+.grade-F{background:linear-gradient(135deg,#ff2d55,#880020);color:#fff;}
+.performance-msg{font-size:1.05rem;color:var(--muted);margin-top:7px;}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+.stat-box{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:4px;padding:13px;text-align:center;}
+.stat-box .num{font-family:'Orbitron',monospace;font-size:1.6rem;font-weight:700;display:block;}
+.stat-box .lbl{font-size:.65rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+.breakdown-title{font-family:'Orbitron',monospace;font-size:.7rem;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.breakdown-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.breakdown-list{display:flex;flex-direction:column;gap:7px;margin-bottom:20px;}
+.bk-row{display:flex;align-items:center;gap:10px;padding:9px 13px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:3px;}
+.bk-name{flex:1;font-weight:600;font-size:.9rem;}
+.bk-bar-wrap{width:110px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+.bk-bar{height:100%;border-radius:3px;transition:width .8s ease;}
+.bk-score{font-family:'Orbitron',monospace;font-size:.8rem;min-width:38px;text-align:right;}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.leaderboard-title{font-family:'Orbitron',monospace;font-size:.7rem;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.leaderboard-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.leaderboard-list{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;}
+.leaderboard-list::-webkit-scrollbar{width:3px;}
+.leaderboard-list::-webkit-scrollbar-thumb{background:var(--border);}
+.lb-entry{display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:3px;}
+.lb-entry.current{border-color:var(--accent);background:rgba(0,212,255,0.07);}
+.lb-rank{font-family:'Orbitron',monospace;font-size:.75rem;color:var(--muted);width:22px;text-align:center;}
+.lb-rank.gold{color:#ffd700}.lb-rank.silver{color:#c0c0c0}.lb-rank.bronze{color:#cd7f32}
+.lb-name{flex:1;font-weight:600;font-size:.92rem;}
+.lb-score{font-family:'Orbitron',monospace;font-size:.82rem;color:var(--accent);}
+
+/* CERT */
+@media print{body{background:white!important;}body::before,body::after{display:none;}.no-print{display:none!important;}#certificate-wrap{display:block!important;}}
+.cert-container{font-family:'Orbitron',monospace;background:white;color:#111;border:3px solid #1a2d4a;padding:42px 52px;position:relative;text-align:center;border-radius:4px;}
+.cert-container::before{content:'';position:absolute;inset:8px;border:1px solid #c0a060;border-radius:2px;pointer-events:none;}
+.cert-logo{font-size:.65rem;letter-spacing:5px;color:#888;margin-bottom:18px;}
+.cert-title{font-size:1.7rem;font-weight:900;letter-spacing:6px;margin-bottom:5px;background:linear-gradient(135deg,#0070aa,#ff6b35);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.cert-subtitle{font-size:.6rem;letter-spacing:4px;color:#888;margin-bottom:24px;}
+.cert-presents{font-size:.6rem;letter-spacing:3px;color:#aaa;margin-bottom:9px;}
+.cert-name{font-size:1.9rem;font-weight:700;color:#111;border-bottom:2px solid #c0a060;display:inline-block;padding-bottom:5px;margin-bottom:22px;letter-spacing:2px;}
+.cert-body{font-family:'Rajdhani',sans-serif;font-size:.9rem;color:#444;line-height:1.7;margin-bottom:20px;}
+.cert-score-row{display:flex;justify-content:center;gap:34px;margin-bottom:24px;}
+.cert-score-item{text-align:center;}
+.cert-score-item .val{font-size:1.5rem;font-weight:900;display:block;color:#111;}
+.cert-score-item .lbl{font-size:.52rem;letter-spacing:3px;color:#888;}
+.cert-grade-big{font-size:3.2rem;font-weight:900;margin-bottom:14px;}
+.cert-footer{display:flex;justify-content:space-between;align-items:flex-end;font-size:.58rem;letter-spacing:2px;color:#aaa;padding-top:18px;border-top:1px solid #ddd;}
+.cert-seal{width:60px;height:60px;border:2px solid #c0a060;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.38rem;letter-spacing:1px;color:#c0a060;text-align:center;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ENTRY -->
+<div id="screen-entry" class="screen active">
+<div class="panel">
+  <div class="entry-logo">
+    <span class="title">STEM+ QUIZ</span>
+    <span class="subtitle">Championship Series · 2025</span>
+  </div>
+  <div class="stats-row">
+    <div class="stat-chip"><span class="val">5</span><span class="lbl">Sections</span></div>
+    <div class="stat-chip"><span class="val">50</span><span class="lbl">Questions</span></div>
+    <div class="stat-chip"><span class="val">8s</span><span class="lbl">Per Q</span></div>
+    <div class="stat-chip"><span class="val">2pts</span><span class="lbl">Per Q</span></div>
+    <div class="stat-chip"><span class="val">100</span><span class="lbl">Max Score</span></div>
+  </div>
+  <div class="input-group">
+    <label>Candidate Name</label>
+    <input type="text" id="name-input" placeholder="Enter your full name..." maxlength="40" autocomplete="off">
+  </div>
+  <button class="btn btn-primary" onclick="startQuiz()">Initialize Quiz ▶</button>
+  <div style="margin-top:26px;">
+    <div class="leaderboard-title">Session Leaderboard</div>
+    <div class="leaderboard-list" id="entry-lb-list"><div style="color:var(--muted);font-size:.9rem;text-align:center;padding:14px;">No sessions yet</div></div>
+  </div>
+</div>
+</div>
+
+<!-- SECTION INTRO -->
+<div id="screen-section-intro" class="screen">
+<div class="panel">
+  <div class="section-intro">
+    <div class="section-number" id="intro-number">SECTION 1 OF 5</div>
+    <div class="section-name-big" id="intro-name">SCIENCE</div>
+    <div class="section-desc" id="intro-desc">Loading...</div>
+    <div class="section-progress-dots" id="intro-dots"></div>
+    <div class="section-info-row">
+      <div class="sinfo"><span class="v">10</span><span class="l">Questions</span></div>
+      <div class="sinfo"><span class="v">8s</span><span class="l">Per Question</span></div>
+      <div class="sinfo"><span class="v">20</span><span class="l">Max Points</span></div>
+    </div>
+    <button class="btn btn-primary" id="intro-btn" onclick="startSection()">Begin Section ▶</button>
+  </div>
+</div>
+</div>
+
+<!-- QUIZ -->
+<div id="screen-quiz" class="screen">
+<div class="panel">
+  <div class="quiz-header">
+    <div class="q-meta">
+      <div class="q-counter" id="q-counter">Q 1 / 10</div>
+      <div id="category-tag" class="category-tag">SCIENCE</div>
+    </div>
+    <div class="score-block">
+      <div class="score-label">TOTAL SCORE</div>
+      <div class="score-display" id="score-display">0</div>
+      <div class="section-score-mini" id="section-score-mini">Section: 0/20</div>
+    </div>
+  </div>
+  <div class="progress-section-wrap">
+    <div class="pbar-label"><span>Section Progress</span><span id="sec-prog-lbl">0%</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-section" style="width:0%"></div></div>
+    <div class="pbar-label"><span>Overall Progress</span><span id="ovr-prog-lbl">0%</span></div>
+    <div class="progress-bar"><div class="progress-fill pf-overall" id="progress-overall" style="width:0%"></div></div>
+  </div>
+  <div class="timer-wrap">
+    <div class="timer-ring">
+      <svg viewBox="0 0 64 64" width="58" height="58">
+        <circle class="track" cx="32" cy="32" r="26"/>
+        <circle class="fill" id="timer-ring-fill" cx="32" cy="32" r="26"/>
+      </svg>
+      <div class="timer-number" id="timer-number">8</div>
+    </div>
+    <div class="timer-bar-wrap">
+      <div class="timer-label">Time Remaining</div>
+      <div class="timer-bar"><div class="timer-bar-fill" id="timer-bar-fill" style="width:100%"></div></div>
+    </div>
+  </div>
+  <div class="question-text" id="question-text"></div>
+  <div class="options" id="options-container"></div>
+  <div class="feedback-strip" id="feedback-strip"></div>
+</div>
+</div>
+
+<!-- SECTION END -->
+<div id="screen-section-end" class="screen">
+<div class="panel">
+  <div class="section-end-header">
+    <div style="font-size:.7rem;letter-spacing:3px;color:var(--muted);margin-bottom:8px;" id="se-section-label">SECTION COMPLETE</div>
+    <span class="sec-score-big" id="se-score">0</span>
+    <div class="sec-score-label" id="se-score-label">/ 20 points</div>
+  </div>
+  <div class="mini-stats">
+    <div class="mstat"><span class="n green" id="se-correct">0</span><span class="l">Correct</span></div>
+    <div class="mstat"><span class="n red" id="se-wrong">0</span><span class="l">Wrong</span></div>
+    <div class="mstat"><span class="n orange" id="se-skip">0</span><span class="l">Skipped</span></div>
+  </div>
+  <div style="margin-bottom:18px;padding:13px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:4px;text-align:center;">
+    <span style="font-size:.72rem;color:var(--muted);letter-spacing:2px;">CUMULATIVE SCORE</span>
+    <div style="font-family:'Orbitron',monospace;font-size:1.7rem;color:var(--accent);margin-top:3px;" id="se-total">0</div>
+  </div>
+  <button class="btn btn-primary" id="se-next-btn" onclick="nextSection()">Next Section ▶</button>
+</div>
+</div>
+
+<!-- FINAL END -->
+<div id="screen-end" class="screen">
+<div class="panel no-print">
+  <div class="final-score-display">
+    <span class="final-score-num" id="final-score-num">0</span>
+    <div id="grade-badge" class="grade-badge grade-A">GRADE A</div>
+    <div class="performance-msg" id="performance-msg"></div>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-box"><span class="num green" id="correct-count">0</span><span class="lbl">Correct</span></div>
+    <div class="stat-box"><span class="num red" id="wrong-count">0</span><span class="lbl">Wrong</span></div>
+    <div class="stat-box"><span class="num orange" id="skip-count">0</span><span class="lbl">Skipped</span></div>
+  </div>
+  <div class="breakdown-title">Section Breakdown</div>
+  <div class="breakdown-list" id="breakdown-list"></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="printCertificate()">🏆 Certificate</button>
+    <button class="btn btn-secondary" onclick="restartQuiz()">↺ Play Again</button>
+  </div>
+  <div class="leaderboard-title">Session Leaderboard</div>
+  <div class="leaderboard-list" id="end-lb-list"></div>
+</div>
+</div>
+
+<!-- CERTIFICATE -->
+<div id="certificate-wrap" style="display:none;">
+<div class="cert-container">
+  <div class="cert-logo">STEM+ CHAMPIONSHIP · OFFICIAL CERTIFICATE OF ACHIEVEMENT</div>
+  <div class="cert-title">Certificate</div>
+  <div class="cert-subtitle">of Achievement</div>
+  <div class="cert-presents">This certifies that</div>
+  <div class="cert-name" id="cert-name">—</div>
+  <div class="cert-body">has successfully completed the STEM+ Quiz Championship,<br>demonstrating knowledge across Science, Technology,<br>Engineering, Mathematics and General Knowledge.</div>
+  <div class="cert-score-row">
+    <div class="cert-score-item"><span class="val" id="cert-score">0</span><span class="lbl">Final Score</span></div>
+    <div class="cert-grade-big" id="cert-grade">A</div>
+    <div class="cert-score-item"><span class="val" id="cert-accuracy">0%</span><span class="lbl">Accuracy</span></div>
+  </div>
+  <div class="cert-footer">
+    <div><div style="font-size:.85rem;color:#111;margin-bottom:3px;">STEM+ Quiz Championship</div><div id="cert-date">—</div></div>
+    <div class="cert-seal">STEM+<br>QUIZ<br>CERT</div>
+    <div style="text-align:right;"><div style="font-size:.85rem;color:#111;margin-bottom:3px;">Official Assessment</div><div id="cert-candidate-name">—</div></div>
+  </div>
+</div>
+</div>
+
+</div>
+<script>
+// ══════════════════════════════════════════════
+// QUESTION BANKS — 50 questions per section
+// ══════════════════════════════════════════════
+const BANK = {
+Science:[
+  {q:"Which subatomic particle has no electric charge?",opts:["Proton","Neutron","Electron"],ans:1},
+  {q:"What is the powerhouse of the cell?",opts:["Nucleus","Ribosome","Mitochondria"],ans:2},
+  {q:"At what temperature (°C) does water boil at sea level?",opts:["90°C","100°C","110°C"],ans:1},
+  {q:"Which planet has the most moons in our solar system?",opts:["Jupiter","Saturn","Uranus"],ans:1},
+  {q:"What is the approximate speed of light in a vacuum?",opts:["3×10⁸ m/s","3×10⁶ m/s","3×10¹⁰ m/s"],ans:0},
+  {q:"DNA stands for?",opts:["Deoxyribonucleic Acid","Dinucleic Acid","Deoxyribose Amino Acid"],ans:0},
+  {q:"Which gas makes up approximately 78% of Earth's atmosphere?",opts:["Oxygen","Carbon Dioxide","Nitrogen"],ans:2},
+  {q:"The pH of a neutral solution is?",opts:["0","7","14"],ans:1},
+  {q:"Which force keeps planets in orbit around the Sun?",opts:["Electromagnetic","Gravity","Nuclear Strong"],ans:1},
+  {q:"What is the chemical symbol for Gold?",opts:["Go","Gd","Au"],ans:2},
+  {q:"How many bones are in the adult human body?",opts:["196","206","216"],ans:1},
+  {q:"What is the smallest unit of life?",opts:["Atom","Cell","Molecule"],ans:1},
+  {q:"Which gas do plants absorb during photosynthesis?",opts:["Oxygen","Carbon Dioxide","Nitrogen"],ans:1},
+  {q:"What is the chemical formula for water?",opts:["HO","H₂O","H₃O"],ans:1},
+  {q:"Which organ in the human body produces insulin?",opts:["Liver","Kidney","Pancreas"],ans:2},
+  {q:"What type of rock is formed from cooled lava?",opts:["Sedimentary","Metamorphic","Igneous"],ans:2},
+  {q:"The theory of evolution was proposed by?",opts:["Newton","Darwin","Einstein"],ans:1},
+  {q:"What is the hardest natural substance on Earth?",opts:["Iron","Diamond","Quartz"],ans:1},
+  {q:"Which planet is closest to the Sun?",opts:["Venus","Earth","Mercury"],ans:2},
+  {q:"How many chambers does the human heart have?",opts:["2","3","4"],ans:2},
+  {q:"What is the atomic number of Carbon?",opts:["6","8","12"],ans:0},
+  {q:"Which vitamin is produced when skin is exposed to sunlight?",opts:["Vitamin A","Vitamin C","Vitamin D"],ans:2},
+  {q:"What is the process by which water vapor turns into liquid?",opts:["Evaporation","Condensation","Sublimation"],ans:1},
+  {q:"Which blood type is the universal donor?",opts:["AB+","O-","A+"],ans:1},
+  {q:"What is the center of an atom called?",opts:["Electron","Neutron","Nucleus"],ans:2},
+  {q:"Which element has the symbol Fe?",opts:["Fluorine","Iron","Francium"],ans:1},
+  {q:"What is the largest organ in the human body?",opts:["Liver","Lung","Skin"],ans:2},
+  {q:"Sound travels fastest through which medium?",opts:["Air","Water","Steel"],ans:2},
+  {q:"What is the boiling point of liquid nitrogen at standard pressure?",opts:["-196°C","-100°C","-273°C"],ans:0},
+  {q:"How many pairs of chromosomes do humans have?",opts:["22","23","46"],ans:1},
+  {q:"Which planet has the Great Red Spot?",opts:["Saturn","Jupiter","Neptune"],ans:1},
+  {q:"Which organ filters blood in the human body?",opts:["Liver","Spleen","Kidney"],ans:2},
+  {q:"What is the chemical symbol for Sodium?",opts:["So","Sd","Na"],ans:2},
+  {q:"Which type of radiation has the longest wavelength?",opts:["Gamma","Ultraviolet","Radio"],ans:2},
+  {q:"The Earth rotates on its axis once every?",opts:["12 hours","24 hours","36 hours"],ans:1},
+  {q:"What is the unit of measurement for electric resistance?",opts:["Volt","Watt","Ohm"],ans:2},
+  {q:"Which gas is most abundant in the Sun?",opts:["Helium","Oxygen","Hydrogen"],ans:2},
+  {q:"What is the name of the process plants use to make food?",opts:["Respiration","Photosynthesis","Digestion"],ans:1},
+  {q:"Which planet is the largest in our solar system?",opts:["Saturn","Jupiter","Uranus"],ans:1},
+  {q:"What is the chemical symbol for Silver?",opts:["Si","Ag","Sr"],ans:1},
+  {q:"Which part of the brain controls balance?",opts:["Cerebrum","Cerebellum","Medulla"],ans:1},
+  {q:"What is the speed of sound in air at 20°C (approx)?",opts:["343 m/s","1500 m/s","3000 m/s"],ans:0},
+  {q:"Which element is liquid at room temperature besides mercury?",opts:["Bromine","Chlorine","Fluorine"],ans:0},
+  {q:"What type of bond is formed when atoms share electrons?",opts:["Ionic","Covalent","Metallic"],ans:1},
+  {q:"Which layer of Earth is liquid?",opts:["Crust","Mantle","Outer Core"],ans:2},
+  {q:"How many moons does Mars have?",opts:["0","2","4"],ans:1},
+  {q:"Which vitamin is essential for blood clotting?",opts:["Vitamin C","Vitamin K","Vitamin E"],ans:1},
+  {q:"What force causes tides on Earth?",opts:["Wind","Moon's gravity","Earth's rotation"],ans:1},
+  {q:"What is the chemical formula for carbon dioxide?",opts:["CO","CO₂","C₂O"],ans:1},
+  {q:"Which organelle contains the genetic material in a cell?",opts:["Ribosome","Mitochondria","Nucleus"],ans:2},
+],
+Technology:[
+  {q:"What does HTTP stand for?",opts:["Hyper Text Transfer Protocol","High Transfer Text Protocol","Hyper Technical Transfer Program"],ans:0},
+  {q:"Who co-founded Apple Inc. with Steve Wozniak?",opts:["Bill Gates","Steve Jobs","Elon Musk"],ans:1},
+  {q:"What is the binary representation of decimal 10?",opts:["1010","1100","1001"],ans:0},
+  {q:"Which company developed the Android operating system?",opts:["Apple","Google","Microsoft"],ans:1},
+  {q:"What does CPU stand for?",opts:["Core Processing Utility","Central Processing Unit","Compute Power Unit"],ans:1},
+  {q:"How many bits make one byte?",opts:["4","8","16"],ans:1},
+  {q:"Which programming language uses indentation as syntax?",opts:["JavaScript","C++","Python"],ans:2},
+  {q:"What does RAM stand for?",opts:["Random Access Memory","Read Arithmetic Memory","Rapid Access Module"],ans:0},
+  {q:"Which protocol is used to send emails?",opts:["FTP","SMTP","HTTP"],ans:1},
+  {q:"Who invented the World Wide Web?",opts:["Alan Turing","Tim Berners-Lee","Vint Cerf"],ans:1},
+  {q:"What does URL stand for?",opts:["Universal Resource Locator","Uniform Resource Locator","United Resource Link"],ans:1},
+  {q:"Which company created the Java programming language?",opts:["Microsoft","Sun Microsystems","IBM"],ans:1},
+  {q:"What does AI stand for in computing?",opts:["Automated Input","Artificial Intelligence","Advanced Integration"],ans:1},
+  {q:"What is the full form of USB?",opts:["Universal System Bus","Universal Serial Bus","United Service Board"],ans:1},
+  {q:"Which company makes the iPhone?",opts:["Samsung","Google","Apple"],ans:2},
+  {q:"What does HTML stand for?",opts:["Hyper Text Markup Language","High Tech Modern Language","Hyper Transfer Module Link"],ans:0},
+  {q:"Which of these is NOT a programming language?",opts:["Python","Cobra","Photoshop"],ans:2},
+  {q:"What is the default port for HTTPS?",opts:["80","443","8080"],ans:1},
+  {q:"What does GPS stand for?",opts:["Global Positioning System","Geographic Placement System","General Position Satellite"],ans:0},
+  {q:"What is the function of DNS?",opts:["Transfers files","Translates domain names to IPs","Encrypts data"],ans:1},
+  {q:"What does SSD stand for?",opts:["Super Speed Drive","Solid State Drive","Secondary Storage Disk"],ans:1},
+  {q:"Which company owns YouTube?",opts:["Microsoft","Meta","Google"],ans:2},
+  {q:"What does VPN stand for?",opts:["Virtual Private Network","Very Public Network","Virtual Public Node"],ans:0},
+  {q:"What is the main function of a firewall?",opts:["Speed up internet","Monitor CPU usage","Block unauthorized access"],ans:2},
+  {q:"Which programming paradigm does C++ primarily support?",opts:["Functional","Object-Oriented","Procedural only"],ans:1},
+  {q:"What does IoT stand for?",opts:["Internet of Terminals","Internet of Things","Integrated Object Technology"],ans:1},
+  {q:"Which of these is an open-source operating system?",opts:["Windows","macOS","Linux"],ans:2},
+  {q:"What does GUI stand for?",opts:["General User Interface","Graphical User Interface","Global Utility Interface"],ans:1},
+  {q:"Who founded Microsoft?",opts:["Steve Jobs and Wozniak","Bill Gates and Paul Allen","Larry Page and Sergey Brin"],ans:1},
+  {q:"What does the S in HTTPS stand for?",opts:["Speed","Secure","Standard"],ans:1},
+  {q:"Which technology is used for wireless short-range communication?",opts:["Infrared","Bluetooth","Satellite"],ans:1},
+  {q:"What is phishing in cybersecurity?",opts:["A type of encryption","Fraudulent attempt to steal info","A network protocol"],ans:1},
+  {q:"What does API stand for?",opts:["Application Programming Interface","Advanced Program Integration","Automated Protocol Interface"],ans:0},
+  {q:"Which data structure operates on LIFO principle?",opts:["Queue","Stack","Array"],ans:1},
+  {q:"What is the purpose of a compiler?",opts:["Execute programs","Translate source code to machine code","Store data"],ans:1},
+  {q:"Which company developed ChatGPT?",opts:["Google","Meta","OpenAI"],ans:2},
+  {q:"What is a bug in programming?",opts:["A feature request","An error in code","A type of virus"],ans:1},
+  {q:"Which language is primarily used for web styling?",opts:["Python","CSS","SQL"],ans:1},
+  {q:"What does OCR stand for?",opts:["Optical Character Recognition","Online Code Repository","Open Content Resource"],ans:0},
+  {q:"What is bandwidth in networking?",opts:["Speed of processor","Data transfer capacity","Size of hard disk"],ans:1},
+  {q:"Which protocol assigns IP addresses automatically?",opts:["FTP","DHCP","TCP"],ans:1},
+  {q:"What is Moore's Law about?",opts:["Internet speeds","Transistor count doubling","Battery life"],ans:1},
+  {q:"What is malware?",opts:["Useful software","Malicious software","Hardware component"],ans:1},
+  {q:"What does SQL stand for?",opts:["Structured Query Language","Standard Question Logic","System Query List"],ans:0},
+  {q:"What is latency in networking?",opts:["Data packet size","Delay in data transmission","Network bandwidth"],ans:1},
+  {q:"Which type of AI can learn from data without explicit programming?",opts:["Symbolic AI","Machine Learning","Expert System"],ans:1},
+  {q:"What does ROM stand for?",opts:["Random Output Memory","Read Only Memory","Rewritable Output Module"],ans:1},
+  {q:"What is the purpose of an IP address?",opts:["Encrypt data","Identify devices on a network","Compress files"],ans:1},
+  {q:"Which sorting algorithm has best average-case time complexity?",opts:["Bubble Sort","Merge Sort","Selection Sort"],ans:1},
+  {q:"What does NFC stand for?",opts:["Network File Control","Near Field Communication","Node Frequency Circuit"],ans:1},
+],
+Engineering:[
+  {q:"What material has the highest tensile strength among common materials?",opts:["Steel","Carbon Fiber","Aluminum"],ans:1},
+  {q:"What is the SI unit of electric current?",opts:["Volt","Ohm","Ampere"],ans:2},
+  {q:"Ohm's Law states: V = ?",opts:["I × R","I / R","I + R"],ans:0},
+  {q:"What does CAD stand for in engineering?",opts:["Computer Aided Design","Calibrated Angle Drawing","Component Assembly Data"],ans:0},
+  {q:"The First Law of Thermodynamics concerns conservation of?",opts:["Momentum","Mass","Energy"],ans:2},
+  {q:"Which metal has the highest electrical conductivity?",opts:["Copper","Gold","Silver"],ans:2},
+  {q:"What is the purpose of a transformer?",opts:["Store energy","Change voltage levels","Amplify signals"],ans:1},
+  {q:"What is the unit of power?",opts:["Joule","Newton","Watt"],ans:2},
+  {q:"What does PLC stand for in industrial engineering?",opts:["Programmable Logic Controller","Pressure Load Calculator","Primary Loop Control"],ans:0},
+  {q:"What is the yield strength of a material?",opts:["Stress at fracture","Stress at onset of permanent deformation","Elastic modulus"],ans:1},
+  {q:"Which civil engineering structure resists mainly compressive forces?",opts:["Cable","Arch","Beam"],ans:1},
+  {q:"What is Bernoulli's principle related to?",opts:["Electric fields","Fluid dynamics","Optics"],ans:1},
+  {q:"Which type of gear provides the highest torque multiplication?",opts:["Spur gear","Planetary gear","Helical gear"],ans:1},
+  {q:"What does factor of safety mean?",opts:["Efficiency ratio","Ratio of failure load to working load","Percentage energy loss"],ans:1},
+  {q:"What is the purpose of a heat exchanger?",opts:["Generate electricity","Transfer heat between fluids","Filter impurities"],ans:1},
+  {q:"What does FEA stand for?",opts:["Fluid Element Analysis","Finite Element Analysis","Force and Energy Analysis"],ans:1},
+  {q:"Which law relates stress and strain in elastic materials?",opts:["Newton's Law","Hooke's Law","Boyle's Law"],ans:1},
+  {q:"What is the function of a diode?",opts:["Amplify signals","Allow current in one direction","Store charge"],ans:1},
+  {q:"What does PWM stand for in electronics?",opts:["Power Width Measurement","Pulse Width Modulation","Peripheral Wave Management"],ans:1},
+  {q:"What is Reynolds number used to predict?",opts:["Electrical resistance","Fluid flow patterns","Structural loads"],ans:1},
+  {q:"What does CNC stand for?",opts:["Computer Numerical Control","Central Node Circuit","Continuous Network Command"],ans:0},
+  {q:"What is the purpose of a capacitor in a circuit?",opts:["Regulate current direction","Store and release electrical energy","Convert AC to DC"],ans:1},
+  {q:"What type of stress does a bolt under tension experience?",opts:["Compressive","Tensile","Shear"],ans:1},
+  {q:"What does RMS stand for in electrical engineering?",opts:["Rated Maximum Signal","Root Mean Square","Relative Magnetic Strength"],ans:1},
+  {q:"Which type of foundation is used in weak soils?",opts:["Strip foundation","Pile foundation","Raft foundation"],ans:1},
+  {q:"What does GIS stand for in civil engineering?",opts:["Geographic Information System","Ground Investigation Survey","General Inspection Standard"],ans:0},
+  {q:"Which law describes the relationship between current and magnetic fields?",opts:["Faraday's Law","Ampere's Law","Coulomb's Law"],ans:1},
+  {q:"What is the purpose of an op-amp?",opts:["Generate power","Amplify voltage differences","Store binary data"],ans:1},
+  {q:"In structural analysis, what is a moment?",opts:["Linear force","Rotational effect of a force","Impact energy"],ans:1},
+  {q:"What does IC stand for in electronics?",opts:["Inductive Coil","Integrated Circuit","Internal Component"],ans:1},
+  {q:"Which metal alloy is most commonly used in aircraft structures?",opts:["Titanium","Aluminum alloy","Carbon steel"],ans:1},
+  {q:"What is the main advantage of DC over AC motors?",opts:["Simpler construction","Easier speed control","Higher efficiency"],ans:1},
+  {q:"Which process reduces metal ore by heating with carbon?",opts:["Oxidation","Smelting","Annealing"],ans:1},
+  {q:"What does HVAC stand for?",opts:["High Voltage AC","Heating Ventilation and Air Conditioning","Hydraulic Valve and Control"],ans:1},
+  {q:"What is the SI unit of pressure?",opts:["Newton","Pascal","Bar"],ans:1},
+  {q:"Which engineering branch focuses on robots and automation?",opts:["Mechatronics","Geotechnical","Marine"],ans:0},
+  {q:"What is the function of a transistor?",opts:["Amplify or switch electronic signals","Store magnetic fields","Generate light"],ans:0},
+  {q:"What does latent heat refer to?",opts:["Stored elastic energy","Heat absorbed during phase change","Thermal conductivity"],ans:1},
+  {q:"Which type of pump is most efficient for high-volume low-pressure?",opts:["Gear pump","Centrifugal pump","Piston pump"],ans:1},
+  {q:"What is the primary purpose of rebar in concrete?",opts:["Reduce weight","Improve tensile strength","Increase thermal resistance"],ans:1},
+  {q:"What does EMF stand for in electrical engineering?",opts:["Electromotive Force","Electromagnetic Flux","Energy Modulation Factor"],ans:0},
+  {q:"Which type of stress causes material layers to slide?",opts:["Tensile","Compressive","Shear"],ans:2},
+  {q:"What is the purpose of a check valve?",opts:["Regulate flow rate","Prevent backflow","Measure pressure"],ans:1},
+  {q:"Which property describes a material's ability to absorb energy before fracturing?",opts:["Hardness","Toughness","Stiffness"],ans:1},
+  {q:"What does the Second Law of Thermodynamics state?",opts:["Energy is conserved","Entropy tends to increase","Force equals mass times acceleration"],ans:1},
+  {q:"What is the purpose of a Wheatstone bridge circuit?",opts:["Amplify voltage","Measure resistance accurately","Generate AC power"],ans:1},
+  {q:"Which material property resists scratching and indentation?",opts:["Ductility","Hardness","Toughness"],ans:1},
+  {q:"What does the term creep mean in materials engineering?",opts:["Sudden fracture","Slow permanent deformation under stress","Elastic recovery"],ans:1},
+  {q:"What is the purpose of a surge protector?",opts:["Increase voltage","Protect from voltage spikes","Store electrical energy"],ans:1},
+  {q:"What does AC stand for in electrical engineering?",opts:["Amplified Current","Alternating Current","Automated Circuit"],ans:1},
+],
+Mathematics:[
+  {q:"What is the value of π to 2 decimal places?",opts:["3.12","3.14","3.16"],ans:1},
+  {q:"What is the square root of 144?",opts:["11","12","13"],ans:1},
+  {q:"If f(x) = x², what is f'(x)?",opts:["x","2x","x²"],ans:1},
+  {q:"What is the sum of angles in a triangle?",opts:["90°","180°","360°"],ans:1},
+  {q:"What is 7! (7 factorial)?",opts:["2520","5040","40320"],ans:1},
+  {q:"Fibonacci sequence: 0,1,1,2,3,5 — what comes next?",opts:["7","8","9"],ans:1},
+  {q:"What is log₁₀(1000)?",opts:["2","3","4"],ans:1},
+  {q:"A right triangle has legs 3 and 4. What is the hypotenuse?",opts:["5","6","7"],ans:0},
+  {q:"What is the probability of flipping heads twice in a row?",opts:["1/2","1/4","1/3"],ans:1},
+  {q:"What is the largest prime number below 20?",opts:["17","19","16"],ans:1},
+  {q:"What is 2¹⁰?",opts:["512","1024","2048"],ans:1},
+  {q:"What is the area of a circle with radius 5?",opts:["25π","10π","5π"],ans:0},
+  {q:"What is the derivative of sin(x)?",opts:["cos(x)","-cos(x)","tan(x)"],ans:0},
+  {q:"What is the sum of the first 100 natural numbers?",opts:["4950","5000","5050"],ans:2},
+  {q:"What is 15% of 200?",opts:["25","30","35"],ans:1},
+  {q:"How many sides does a dodecagon have?",opts:["10","12","14"],ans:1},
+  {q:"What is the integral of x dx?",opts:["x²","x²/2 + C","2x + C"],ans:1},
+  {q:"What is the value of e (Euler's number) to 2 decimal places?",opts:["2.71","2.81","2.61"],ans:0},
+  {q:"If 3x + 7 = 22, what is x?",opts:["3","5","7"],ans:1},
+  {q:"What is the perimeter of a square with side length 6?",opts:["12","24","36"],ans:1},
+  {q:"How many degrees are in a full circle?",opts:["180","270","360"],ans:2},
+  {q:"What is the mode of: 2,3,3,4,5,5,5,6?",opts:["3","4","5"],ans:2},
+  {q:"What is cos(60°)?",opts:["0.5","√3/2","1"],ans:0},
+  {q:"Simplify: (x³)(x⁴)",opts:["x⁷","x¹²","x"],ans:0},
+  {q:"What is the slope of the line y = 3x + 7?",opts:["7","3","1/3"],ans:1},
+  {q:"How many edges does a cube have?",opts:["8","10","12"],ans:2},
+  {q:"What is 0! (zero factorial)?",opts:["0","1","Undefined"],ans:1},
+  {q:"Which of these is an irrational number?",opts:["0.5","√2","3/4"],ans:1},
+  {q:"What is the median of: 3,7,5,9,1?",opts:["5","7","3"],ans:0},
+  {q:"A triangle has angles 50° and 70°. The third angle is?",opts:["50°","60°","70°"],ans:1},
+  {q:"What is 25²?",opts:["525","625","725"],ans:1},
+  {q:"What is the volume of a cube with side length 3?",opts:["9","18","27"],ans:2},
+  {q:"What is 12/5 as a decimal?",opts:["2.2","2.4","2.6"],ans:1},
+  {q:"What is the LCM of 4 and 6?",opts:["8","12","24"],ans:1},
+  {q:"If a set has 4 elements, how many subsets does it have?",opts:["8","16","32"],ans:1},
+  {q:"What is tan(45°)?",opts:["0","0.5","1"],ans:2},
+  {q:"What is the HCF of 18 and 24?",opts:["3","6","9"],ans:1},
+  {q:"Which is larger: 2/3 or 3/4?",opts:["2/3","3/4","Equal"],ans:1},
+  {q:"What is the surface area of a sphere with radius r?",opts:["2πr²","4πr²","πr²"],ans:1},
+  {q:"How many prime numbers are there between 1 and 20?",opts:["6","7","8"],ans:2},
+  {q:"What is the nth term of the arithmetic sequence 3,7,11,15...?",opts:["2n+1","4n-1","3n+1"],ans:1},
+  {q:"What is the probability of rolling a 6 on a fair die?",opts:["1/3","1/4","1/6"],ans:2},
+  {q:"What is the conjugate of 3+4i?",opts:["3-4i","-3+4i","-3-4i"],ans:0},
+  {q:"Solve: 2² + 3²",opts:["10","13","25"],ans:1},
+  {q:"Which of these is a geometric sequence?",opts:["1,3,5,7","2,4,8,16","1,4,9,16"],ans:1},
+  {q:"What is ∫₀¹ x² dx?",opts:["1/2","1/3","1/4"],ans:1},
+  {q:"How many vertices does a tetrahedron have?",opts:["3","4","5"],ans:1},
+  {q:"What is the exact value of sin(90°)?",opts:["0","0.5","1"],ans:2},
+  {q:"If P(A)=0.3 and P(B)=0.5 (independent), P(A∩B)=?",opts:["0.8","0.15","0.2"],ans:1},
+  {q:"What is the discriminant formula for a quadratic ax²+bx+c?",opts:["b²-4ac","b²+4ac","2b-4ac"],ans:0},
+],
+"General Knowledge":[
+  {q:"What is the capital of France?",opts:["Berlin","Paris","Rome"],ans:1},
+  {q:"Which country has the largest population?",opts:["USA","China","India"],ans:1},
+  {q:"What is the longest river in the world?",opts:["Amazon","Nile","Yangtze"],ans:1},
+  {q:"Who wrote Romeo and Juliet?",opts:["Dickens","Shakespeare","Hemingway"],ans:1},
+  {q:"What is the currency of Japan?",opts:["Yuan","Won","Yen"],ans:2},
+  {q:"Which is the largest continent?",opts:["Africa","Asia","Europe"],ans:1},
+  {q:"How many colors are in a rainbow?",opts:["5","6","7"],ans:2},
+  {q:"What year did World War II end?",opts:["1943","1945","1947"],ans:1},
+  {q:"Which ocean is the largest?",opts:["Atlantic","Indian","Pacific"],ans:2},
+  {q:"What is the official language of Brazil?",opts:["Spanish","Portuguese","French"],ans:1},
+  {q:"Who painted the Mona Lisa?",opts:["Michelangelo","Da Vinci","Raphael"],ans:1},
+  {q:"What is the smallest country in the world?",opts:["Monaco","San Marino","Vatican City"],ans:2},
+  {q:"How many continents are there on Earth?",opts:["5","6","7"],ans:2},
+  {q:"Which is the tallest mountain in the world?",opts:["K2","Mount Everest","Kangchenjunga"],ans:1},
+  {q:"Who invented the telephone?",opts:["Edison","Alexander Graham Bell","Tesla"],ans:1},
+  {q:"Which country gifted the Statue of Liberty to the USA?",opts:["UK","Canada","France"],ans:2},
+  {q:"How many players are in a standard soccer/football team?",opts:["9","10","11"],ans:2},
+  {q:"What is the capital of Nigeria?",opts:["Lagos","Kano","Abuja"],ans:2},
+  {q:"What year did the first iPhone launch?",opts:["2005","2007","2009"],ans:1},
+  {q:"Who was the first human to walk on the Moon?",opts:["Buzz Aldrin","Yuri Gagarin","Neil Armstrong"],ans:2},
+  {q:"Which country is known as the Land of the Rising Sun?",opts:["China","South Korea","Japan"],ans:2},
+  {q:"Which country has the most Olympic gold medals of all time?",opts:["Russia","China","United States"],ans:2},
+  {q:"In which year did the Berlin Wall fall?",opts:["1987","1989","1991"],ans:1},
+  {q:"Which animal is the fastest on land?",opts:["Lion","Cheetah","Gazelle"],ans:1},
+  {q:"What is the capital of Australia?",opts:["Sydney","Melbourne","Canberra"],ans:2},
+  {q:"How many strings does a standard guitar have?",opts:["4","6","8"],ans:1},
+  {q:"Which is the longest bone in the human body?",opts:["Spine","Femur","Humerus"],ans:1},
+  {q:"What is the currency of the United Kingdom?",opts:["Euro","Dollar","Pound Sterling"],ans:2},
+  {q:"Who discovered penicillin?",opts:["Marie Curie","Alexander Fleming","Louis Pasteur"],ans:1},
+  {q:"What is the capital of China?",opts:["Shanghai","Hong Kong","Beijing"],ans:2},
+  {q:"How many days are in a leap year?",opts:["365","366","367"],ans:1},
+  {q:"Which language is most widely spoken in the world by native speakers?",opts:["English","Mandarin Chinese","Spanish"],ans:1},
+  {q:"What is the largest desert in the world?",opts:["Sahara","Gobi","Antarctic"],ans:2},
+  {q:"Which vitamin deficiency causes scurvy?",opts:["Vitamin A","Vitamin B12","Vitamin C"],ans:2},
+  {q:"What year did the Titanic sink?",opts:["1910","1912","1914"],ans:1},
+  {q:"Which country invented pizza?",opts:["France","Italy","Greece"],ans:1},
+  {q:"What is the boiling point of water in Fahrenheit?",opts:["200°F","212°F","220°F"],ans:1},
+  {q:"Who wrote the novel 1984?",opts:["Aldous Huxley","George Orwell","Ray Bradbury"],ans:1},
+  {q:"What does WHO stand for?",opts:["World Health Organization","World Humanitarian Office","Western Health Organization"],ans:0},
+  {q:"Which metal is extracted from bauxite ore?",opts:["Iron","Copper","Aluminum"],ans:2},
+  {q:"What is the capital of Japan?",opts:["Osaka","Kyoto","Tokyo"],ans:2},
+  {q:"Which planet is known as the Blue Planet?",opts:["Neptune","Uranus","Earth"],ans:2},
+  {q:"Who was the first President of the United States?",opts:["Abraham Lincoln","Thomas Jefferson","George Washington"],ans:2},
+  {q:"What is the name of the world's largest rainforest?",opts:["Congo","Amazon","Borneo"],ans:1},
+  {q:"How many sides does a hexagon have?",opts:["5","6","7"],ans:1},
+  {q:"What is the chemical symbol for water?",opts:["WO","H₂O","HO₂"],ans:1},
+  {q:"Which country has the Eiffel Tower?",opts:["Italy","Spain","France"],ans:2},
+  {q:"What is the hardest natural substance?",opts:["Granite","Gold","Diamond"],ans:2},
+  {q:"How many hours are in a week?",opts:["148","168","180"],ans:1},
+  {q:"Which famous scientist developed the theory of general relativity?",opts:["Newton","Hawking","Einstein"],ans:2},
+]
+};
+
+// ── SECTION CONFIG ──
+const SECTIONS=[
+  {key:"Science",        color:"#00d4ff", desc:"Test your knowledge of fundamental scientific principles, biology, chemistry and physics."},
+  {key:"Technology",     color:"#7fff00", desc:"From hardware to software, AI to networking — how well do you know the tech world?"},
+  {key:"Engineering",    color:"#ff6b35", desc:"Structural, electrical, mechanical and chemical engineering concepts put to the test."},
+  {key:"Mathematics",    color:"#ff2d55", desc:"Numbers, equations, geometry and calculus — prove your mathematical mastery."},
+  {key:"General Knowledge", color:"#ffd700", desc:"History, geography, culture, science and world affairs — how broad is your knowledge?"},
+];
+const QPS=10, PTS=2, TIME=8;
+
+// ── STATE ──
+let candidateName='',currentSection=0,sectionQuestions=[],currentQ=0;
+let score=0,sectionScore=0,correctCount=0,wrongCount=0,skipCount=0;
+let sCorrect=0,sWrong=0,sSkip=0,sectionResults=[];
+let timerInterval=null,timeLeft=TIME,answered=false;
+let leaderboard=[];
+try{leaderboard=JSON.parse(localStorage.getItem('stemLB3')||'[]');}catch(e){}
+
+// Audio
+let audioCtx=null;
+function ga(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function playSound(t){
+  try{
+    const ctx=ga(),osc=ctx.createOscillator(),g=ctx.createGain();
+    osc.connect(g);g.connect(ctx.destination);
+    const now=ctx.currentTime;
+    if(t==='correct'){osc.type='sine';[523,659,784].forEach((f,i)=>osc.frequency.setValueAtTime(f,now+i*.1));g.gain.setValueAtTime(.16,now);g.gain.exponentialRampToValueAtTime(.001,now+.5);osc.start(now);osc.stop(now+.5);}
+    else if(t==='wrong'){osc.type='square';osc.frequency.setValueAtTime(200,now);osc.frequency.setValueAtTime(130,now+.15);g.gain.setValueAtTime(.12,now);g.gain.exponentialRampToValueAtTime(.001,now+.35);osc.start(now);osc.stop(now+.35);}
+    else if(t==='tick'){osc.type='sine';osc.frequency.setValueAtTime(900,now);g.gain.setValueAtTime(.04,now);g.gain.exponentialRampToValueAtTime(.001,now+.07);osc.start(now);osc.stop(now+.07);}
+    else if(t==='timeout'){osc.type='sawtooth';osc.frequency.setValueAtTime(280,now);osc.frequency.setValueAtTime(80,now+.3);g.gain.setValueAtTime(.1,now);g.gain.exponentialRampToValueAtTime(.001,now+.4);osc.start(now);osc.stop(now+.4);}
+    else if(t==='section'){
+      [523,659,784,1047].forEach((f,i)=>{const o2=ctx.createOscillator(),g2=ctx.createGain();o2.connect(g2);g2.connect(ctx.destination);o2.type='sine';o2.frequency.setValueAtTime(f,now+i*.1);g2.gain.setValueAtTime(.1,now+i*.1);g2.gain.exponentialRampToValueAtTime(.001,now+i*.1+.3);o2.start(now+i*.1);o2.stop(now+i*.1+.3);});
+    }
+  }catch(e){}
+}
+
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+id).classList.add('active');}
+
+// ── ENTRY ──
+function startQuiz(){
+  const inp=document.getElementById('name-input');
+  const name=inp.value.trim();
+  if(!name){inp.style.borderColor='var(--wrong)';inp.focus();setTimeout(()=>inp.style.borderColor='',1200);return;}
+  candidateName=name;currentSection=0;score=0;correctCount=0;wrongCount=0;skipCount=0;sectionResults=[];
+  showSectionIntro();
+}
+
+// ── SECTION INTRO ──
+function showSectionIntro(){
+  const sec=SECTIONS[currentSection];
+  document.getElementById('intro-number').textContent=`SECTION ${currentSection+1} OF ${SECTIONS.length}`;
+  document.getElementById('intro-name').textContent=sec.key.toUpperCase();
+  document.getElementById('intro-name').style.color=sec.color;
+  document.getElementById('intro-name').style.textShadow=`0 0 30px ${sec.color}55`;
+  document.getElementById('intro-desc').textContent=sec.desc;
+  document.getElementById('intro-btn').textContent=currentSection===0?'Begin Quiz ▶':`Continue — ${sec.key} ▶`;
+
+  const dots=document.getElementById('intro-dots');
+  dots.innerHTML=SECTIONS.map((s,i)=>{
+    let cls='dot',style='';
+    if(i<currentSection){cls+=' done';style=`background:var(--accent2)`;}
+    if(i===currentSection){cls+=' active';style=`background:${s.color};box-shadow:0 0 12px ${s.color}`;}
+    return `<div class="${cls}" style="${style}"></div>`;
+  }).join('');
+  showScreen('section-intro');
+}
+
+function startSection(){
+  const pool=[...BANK[SECTIONS[currentSection].key]].sort(()=>Math.random()-.5);
+  sectionQuestions=pool.slice(0,QPS);
+  currentQ=0;sectionScore=0;sCorrect=0;sWrong=0;sSkip=0;
+  showScreen('quiz');loadQuestion();
+}
+
+// ── QUIZ ──
+function loadQuestion(){
+  answered=false;timeLeft=TIME;
+  const sec=SECTIONS[currentSection];
+  const qData=sectionQuestions[currentQ];
+  const globalQ=currentSection*QPS+currentQ;
+
+  document.getElementById('q-counter').textContent=`Q ${currentQ+1} / ${QPS}  ·  ${sec.key}`;
+  const ctag=document.getElementById('category-tag');
+  ctag.textContent=sec.key.toUpperCase();
+  ctag.style.color=sec.color;ctag.style.borderColor=sec.color+'40';ctag.style.background=sec.color+'14';
+
+  updateScoreDisplay();
+  document.getElementById('section-score-mini').textContent=`Section: ${sectionScore}/${QPS*PTS}`;
+
+  const secPct=(currentQ/QPS)*100;
+  const ovrPct=(globalQ/(SECTIONS.length*QPS))*100;
+  const ps=document.getElementById('progress-section');
+  ps.style.width=secPct+'%';
+  ps.style.background=`linear-gradient(90deg,${sec.color},${sec.color}88)`;
+  ps.style.boxShadow=`0 0 8px ${sec.color}66`;
+  document.getElementById('progress-overall').style.width=ovrPct+'%';
+  document.getElementById('sec-prog-lbl').textContent=Math.round(secPct)+'%';
+  document.getElementById('ovr-prog-lbl').textContent=Math.round(ovrPct)+'%';
+
+  document.getElementById('question-text').textContent=qData.q;
+
+  const cont=document.getElementById('options-container');
+  cont.innerHTML='';
+  ['A','B','C'].forEach((l,i)=>{
+    const btn=document.createElement('button');
+    btn.className='option';
+    btn.innerHTML=`<span class="opt-letter">${l}</span>${qData.opts[i]}`;
+    btn.onclick=()=>selectAnswer(i);
+    cont.appendChild(btn);
+  });
+
+  const fb=document.getElementById('feedback-strip');
+  fb.className='feedback-strip';fb.textContent='';
+  updateTimer();clearInterval(timerInterval);
+  timerInterval=setInterval(tickTimer,1000);
+}
+
+function updateTimer(){
+  const pct=timeLeft/TIME;
+  const ring=document.getElementById('timer-ring-fill');
+  const bar=document.getElementById('timer-bar-fill');
+  ring.style.strokeDashoffset=163*(1-pct);
+  bar.style.width=(pct*100)+'%';
+  document.getElementById('timer-number').textContent=timeLeft;
+  const num=document.getElementById('timer-number');
+  ring.className='fill';
+  if(timeLeft<=3){ring.classList.add('danger');bar.style.background='var(--wrong)';num.style.color='var(--wrong)';}
+  else if(timeLeft<=5){ring.classList.add('warning');bar.style.background='var(--accent2)';num.style.color='var(--accent2)';}
+  else{bar.style.background='var(--accent)';num.style.color='var(--text)';}
+}
+
+function tickTimer(){
+  if(answered)return;
+  timeLeft--;
+  if(timeLeft<=5&&timeLeft>0)playSound('tick');
+  updateTimer();
+  if(timeLeft<=0){clearInterval(timerInterval);handleTimeout();}
+}
+
+function handleTimeout(){
+  answered=true;sSkip++;skipCount++;
+  const qData=sectionQuestions[currentQ];
+  document.querySelectorAll('.option').forEach(o=>o.classList.add('disabled'));
+  document.querySelectorAll('.option')[qData.ans].classList.add('correct');
+  const fb=document.getElementById('feedback-strip');
+  fb.className='feedback-strip timeout';
+  fb.textContent=`⏱ Time's up!  Correct answer: ${qData.opts[qData.ans]}`;
+  playSound('timeout');advance(2000);
+}
+
+function selectAnswer(chosen){
+  if(answered)return;
+  answered=true;clearInterval(timerInterval);
+  const qData=sectionQuestions[currentQ];
+  document.querySelectorAll('.option').forEach(o=>o.classList.add('disabled'));
+  const fb=document.getElementById('feedback-strip');
+  if(chosen===qData.ans){
+    document.querySelectorAll('.option')[chosen].classList.add('correct');
+    score+=PTS;sectionScore+=PTS;correctCount++;sCorrect++;
+    fb.className='feedback-strip correct';fb.textContent=`✓ Correct! +${PTS} points`;
+    playSound('correct');
+  } else {
+    document.querySelectorAll('.option')[chosen].classList.add('wrong');
+    document.querySelectorAll('.option')[qData.ans].classList.add('correct');
+    score-=PTS;sectionScore-=PTS;wrongCount++;sWrong++;
+    fb.className='feedback-strip wrong';fb.textContent=`✗ Wrong! -${PTS} points. Correct: ${qData.opts[qData.ans]}`;
+    playSound('wrong');
+  }
+  updateScoreDisplay();
+  document.getElementById('section-score-mini').textContent=`Section: ${sectionScore}/${QPS*PTS}`;
+  advance(2000);
+}
+
+function updateScoreDisplay(){
+  const el=document.getElementById('score-display');
+  el.textContent=(score>=0?'+':'')+score;
+  el.className='score-display'+(score<0?' negative':'');
+}
+
+function advance(ms){
+  setTimeout(()=>{currentQ++;if(currentQ>=QPS)endSection();else loadQuestion();},ms);
+}
+
+// ── SECTION END ──
+function endSection(){
+  clearInterval(timerInterval);
+  const sec=SECTIONS[currentSection];
+  playSound('section');
+  sectionResults.push({key:sec.key,score:sectionScore,correct:sCorrect,wrong:sWrong,skip:sSkip,color:sec.color});
+
+  document.getElementById('se-section-label').textContent=`${sec.key.toUpperCase()} — SECTION COMPLETE`;
+  const se=document.getElementById('se-score');
+  se.textContent=sectionScore;
+  se.style.background=`linear-gradient(135deg,${sec.color},${sec.color}88)`;
+  se.style.webkitBackgroundClip='text';se.style.webkitTextFillColor='transparent';se.style.backgroundClip='text';
+  document.getElementById('se-score-label').textContent=`/ ${QPS*PTS} points`;
+  document.getElementById('se-correct').textContent=sCorrect;
+  document.getElementById('se-wrong').textContent=sWrong;
+  document.getElementById('se-skip').textContent=sSkip;
+  document.getElementById('se-total').textContent=(score>=0?'+':'')+score+' / '+(currentSection+1)*QPS*PTS;
+
+  const nb=document.getElementById('se-next-btn');
+  if(currentSection+1>=SECTIONS.length)nb.textContent='View Final Results ▶';
+  else nb.textContent=`Next: ${SECTIONS[currentSection+1].key} ▶`;
+  showScreen('section-end');
+}
+
+function nextSection(){
+  currentSection++;
+  if(currentSection>=SECTIONS.length)endQuiz();
+  else showSectionIntro();
+}
+
+// ── FINAL ──
+function endQuiz(){
+  const {grade,msg}=getGrade(score);
+  document.getElementById('final-score-num').textContent=score;
+  const badge=document.getElementById('grade-badge');
+  badge.textContent=`GRADE ${grade}`;badge.className=`grade-badge grade-${grade}`;
+  document.getElementById('performance-msg').textContent=msg;
+  document.getElementById('correct-count').textContent=correctCount;
+  document.getElementById('wrong-count').textContent=wrongCount;
+  document.getElementById('skip-count').textContent=skipCount;
+
+  const bl=document.getElementById('breakdown-list');
+  bl.innerHTML=sectionResults.map(r=>{
+    const max=QPS*PTS;
+    const pct=Math.max(0,r.score/max)*100;
+    return `<div class="bk-row">
+      <div class="bk-name">${r.key}</div>
+      <div class="bk-bar-wrap"><div class="bk-bar" style="width:${pct}%;background:linear-gradient(90deg,${r.color},${r.color}88)"></div></div>
+      <div class="bk-score" style="color:${r.color}">${r.score}/${max}</div>
+    </div>`;
+  }).join('');
+
+  const accuracy=Math.round((correctCount/(SECTIONS.length*QPS))*100);
+  leaderboard.push({name:candidateName,score,correct:correctCount,date:new Date().toLocaleDateString()});
+  leaderboard.sort((a,b)=>b.score-a.score);
+  leaderboard=leaderboard.slice(0,10);
+  try{localStorage.setItem('stemLB3',JSON.stringify(leaderboard));}catch(e){}
+
+  renderLB('end-lb-list',true);renderLB('entry-lb-list',false);
+
+  document.getElementById('cert-name').textContent=candidateName;
+  document.getElementById('cert-score').textContent=score;
+  document.getElementById('cert-grade').textContent=grade;
+  document.getElementById('cert-accuracy').textContent=accuracy+'%';
+  document.getElementById('cert-date').textContent=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('cert-candidate-name').textContent=candidateName;
+  showScreen('end');
+}
+
+function getGrade(s){
+  const max=SECTIONS.length*QPS*PTS;const p=(s/max)*100;
+  if(p>=90)return{grade:'S',msg:'🌟 Outstanding! Perfect-class STEM mastery!'};
+  if(p>=75)return{grade:'A',msg:'🎯 Excellent! You truly know your subjects!'};
+  if(p>=60)return{grade:'B',msg:'👍 Great job! Strong cross-disciplinary knowledge.'};
+  if(p>=45)return{grade:'C',msg:'📚 Good effort. Keep reviewing each subject!'};
+  if(p>=30)return{grade:'D',msg:'💪 Keep going. Consistent practice helps!'};
+  return{grade:'F',msg:'🔄 Don\'t give up — review and try again!'};
+}
+
+function renderLB(id,mark){
+  const el=document.getElementById(id);if(!el)return;
+  if(!leaderboard.length){el.innerHTML='<div style="color:var(--muted);font-size:.88rem;text-align:center;padding:14px;">No sessions yet</div>';return;}
+  const em=['🥇','🥈','🥉'],cl=['gold','silver','bronze'];
+  el.innerHTML=leaderboard.map((e,i)=>{
+    const cur=mark&&e.name===candidateName&&e.score===score;
+    return `<div class="lb-entry${cur?' current':''}">
+      <div class="lb-rank ${cl[i]||''}">${i<3?em[i]:'#'+(i+1)}</div>
+      <div class="lb-name">${e.name}${cur?' ◀ YOU':''}</div>
+      <div class="lb-score">${e.score>=0?'+':''}${e.score}</div>
+    </div>`;
+  }).join('');
+}
+
+function printCertificate(){
+  document.getElementById('certificate-wrap').style.display='block';
+  setTimeout(()=>{window.print();document.getElementById('certificate-wrap').style.display='none';},200);
+}
+
+function restartQuiz(){
+  document.getElementById('name-input').value='';
+  showScreen('entry');renderLB('entry-lb-list',false);
+}
+
+document.getElementById('name-input').addEventListener('keydown',e=>{if(e.key==='Enter')startQuiz();});
+renderLB('entry-lb-list',false);
+</script>
+</body>
+</html>
